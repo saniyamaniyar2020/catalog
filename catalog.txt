@@ -1,0 +1,129 @@
+function convertToDecimal(base, value) {
+    return parseInt(value, base);
+}
+
+function lagrangeInterpolation(xValues, yValues) {
+    let total = 0;
+    for (let i = 0; i < xValues.length; i++) {
+        let xi = xValues[i];
+        let yi = yValues[i];
+        let term = yi;
+        for (let j = 0; j < xValues.length; j++) {
+            if (i !== j) {
+                term *= (0 - xValues[j]) / (xi - xValues[j]);
+            }
+        }
+        total += term;
+    }
+    return total;
+}
+
+function checkWrongPoints(xValues, yValues, secret) {
+    let wrongPoints = [];
+    for (let x of xValues) {
+        let index = xValues.indexOf(x);
+        if (index !== -1) {
+            let expectedY = yValues[index];
+            if (secret !== expectedY) {
+                wrongPoints.push({ x: x, expectedY: expectedY });
+            }
+        }
+    }
+    return wrongPoints;
+}
+
+function processInput(data) {
+    let results = [];
+    for (let testCase of data.test_cases) {
+        let n = testCase.keys.n;
+        let k = testCase.keys.k;
+
+        let xValues = [];
+        let yValues = [];
+        
+        for (let key in testCase) {
+            if (key !== 'keys') {
+                let base = parseInt(testCase[key].base);
+                let value = testCase[key].value;
+                let y = convertToDecimal(base, value);
+                let x = parseInt(key);
+                xValues.push(x);
+                yValues.push(y);
+            }
+        }
+
+        let selectedX = xValues.slice(0, k);
+        let selectedY = yValues.slice(0, k);
+        
+        let secret = lagrangeInterpolation(selectedX, selectedY);
+        results.push({ secret: secret });
+        
+        if (testCase.check_wrong_points) {
+            let wrongPoints = checkWrongPoints(xValues, yValues, secret);
+            results[results.length - 1].wrong_points = wrongPoints;
+        }
+    }
+    return results;
+}
+
+// Main execution block
+const inputJson = `{
+    "test_cases": [
+        {
+            "keys": {
+                "n": 4,
+                "k": 3
+            },
+            "1": {
+                "base": "10",
+                "value": "4"
+            },
+            "2": {
+                "base": "2",
+                "value": "111"
+            },
+            "3": {
+                "base": "10",
+                "value": "12"
+            },
+            "4": {
+                "base": "4",
+                "value": "213"
+            }
+        },
+        {
+            "keys": {
+                "n": 4,
+                "k": 3
+            },
+            "1": {
+                "base": "10",
+                "value": "5"
+            },
+            "2": {
+                "base": "2",
+                "value": "110"
+            },
+            "3": {
+                "base": "10",
+                "value": "13"
+            },
+            "4": {
+                "base": "10",
+                "value": "10"
+            },
+            "check_wrong_points": true
+        }
+    ]
+}`;
+
+const data = JSON.parse(inputJson);
+const results = processInput(data);
+
+results.forEach((result, index) => {
+    console.log(`Secret for test case ${index + 1}: ${result.secret}`);
+    if (result.wrong_points) {
+        console.log(`Wrong points for test case ${index + 1}: ${JSON.stringify(result.wrong_points)}`);
+    }
+});
+
